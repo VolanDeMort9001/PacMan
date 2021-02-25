@@ -3,7 +3,7 @@ import os
 import sys
 from random import shuffle
 from math import sqrt
-
+from random import randint
 
 def load_image(name):
     fullname = os.path.join('data', name)
@@ -42,39 +42,39 @@ class Ghosts:
             y_distance = self.target[1] - self.position[1]
             choices = [-1, -1, -1, -1]
 
-            if abs(x_distance) > abs(y_distance):  # horizontal 1st
-                if x_distance > 0:  # right 1st
+            if abs(x_distance) > abs(y_distance):
+                if x_distance > 0:
                     choices[0] = 2
                     choices[3] = 0
-                elif x_distance < 0:  # left 1st
+                elif x_distance < 0:
                     choices[0] = 0
                     choices[3] = 2
 
-                if y_distance > 0:  # down 2nd
+                if y_distance > 0:
                     choices[1] = 1
                     choices[2] = 3
-                elif y_distance < 0:  # up 2nd
+                elif y_distance < 0:
                     choices[1] = 3
                     choices[2] = 1
-                else:  # y_distance == 0
+                else:
                     choices[1] = 1
                     choices[2] = 3
 
-            elif abs(y_distance) >= abs(x_distance):  # vertical 1st
-                if y_distance > 0:  # down 1st
+            elif abs(y_distance) >= abs(x_distance):
+                if y_distance > 0:
                     choices[0] = 1
                     choices[3] = 3
-                elif y_distance < 0:  # up 1st
+                elif y_distance < 0:
                     choices[0] = 3
                     choices[3] = 1
 
-                if x_distance > 0:  # right 2nd
+                if x_distance > 0:
                     choices[1] = 2
                     choices[2] = 0
-                elif x_distance < 0:  # left 2nd
+                elif x_distance < 0:
                     choices[1] = 0
                     choices[2] = 2
-                else:  # x_distance == 0
+                else:
                     choices[1] = 2
                     choices[2] = 0
             if self.is_blue:
@@ -110,7 +110,7 @@ class Ghosts:
 class RedGhost(pygame.sprite.Sprite, Ghosts):
     def __init__(self, red_positions, red_directions):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('RedGhost.png'), (20, 20))
+        self.image = load_image('RedGhost.png')
         self.rect = self.image.get_rect()
         self.rect.x = red_positions[0] * 20
         self.rect.y = red_positions[1] * 20
@@ -123,9 +123,14 @@ class RedGhost(pygame.sprite.Sprite, Ghosts):
 
     def update(self, red_pacman_position, mode, red_map):
         if mode == 'chase':
+            self.image = load_image('RedGhost.png')
             self.target = red_pacman_position
-        else:
+        elif mode == 'scatter':
+            self.image = load_image('RedGhost.png')
             self.target = [25, 0]
+        else:
+            self.image = load_image('ScaredGhost.png')
+            self.target = [randint(0, 27), randint(0, 35)]
         Ghosts.moving(self, red_map)
         return self.position
 
@@ -140,12 +145,20 @@ class RedGhost(pygame.sprite.Sprite, Ghosts):
             self.position[0] += 1
         elif self.direction == 2:
             self.position[0] -= 1
+        return self.position
+
+    def start_pos(self):
+        self.position = [13, 14]
+        self.rect.x = 260
+        self.rect.y = 280
+        self.moved = 0
+        self.direction = 0
 
 
 class PinkGhost(pygame.sprite.Sprite, Ghosts):
     def __init__(self, pink_positions, pink_directions):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('PinkGhost.png'), (20, 20))
+        self.image = load_image('PinkGhost.png')
         self.rect = self.image.get_rect()
         self.rect.x = pink_positions[0] * 20
         self.rect.y = pink_positions[1] * 20
@@ -158,6 +171,7 @@ class PinkGhost(pygame.sprite.Sprite, Ghosts):
 
     def update(self, pink_pacman_position, mode, pink_map, pink_pacman_direction):
         if mode == 'chase':
+            self.image = load_image('PinkGhost.png')
             if pink_pacman_direction == 0:
                 self.target = [pink_pacman_position[0] - 4, pink_pacman_position[1]]
             elif pink_pacman_direction == 1:
@@ -166,9 +180,14 @@ class PinkGhost(pygame.sprite.Sprite, Ghosts):
                 self.target = [pink_pacman_position[0] + 4, pink_pacman_position[1]]
             elif pink_pacman_direction == 3:
                 self.target = [pink_pacman_position[0], pink_pacman_position[1] - 4]
-        else:
+        elif mode == 'scatter':
+            self.image = load_image('PinkGhost.png')
             self.target = [0, 0]
+        else:
+            self.image = load_image('ScaredGhost.png')
+            self.target = [randint(0, 27), randint(0, 35)]
         Ghosts.moving(self, pink_map)
+        return self.position
 
     def change_direction(self):
         self.direction = (self.direction + 2) % 4
@@ -181,12 +200,20 @@ class PinkGhost(pygame.sprite.Sprite, Ghosts):
             self.position[0] += 1
         elif self.direction == 2:
             self.position[0] -= 1
+        return self.position
+
+    def start_pos(self):
+        self.position = [14, 14]
+        self.rect.x = 280
+        self.rect.y = 280
+        self.moved = 0
+        self.direction = 2
 
 
 class BlueGhost(pygame.sprite.Sprite, Ghosts):
     def __init__(self, blue_positions, blue_directions):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('BlueGhost.png'), (20, 20))
+        self.image = load_image('BlueGhost.png')
         self.rect = self.image.get_rect()
         self.rect.x = blue_positions[0] * 20
         self.rect.y = blue_positions[1] * 20
@@ -199,6 +226,7 @@ class BlueGhost(pygame.sprite.Sprite, Ghosts):
 
     def update(self, blue_pacman_position, mode, blue_map, blue_red_position, blue_pacman_direction):
         if mode == 'chase':
+            self.image = load_image('BlueGhost.png')
             self.target = [0, 0]
             target1 = blue_red_position
             if blue_pacman_direction == 0:
@@ -209,10 +237,15 @@ class BlueGhost(pygame.sprite.Sprite, Ghosts):
                 target2 = [blue_pacman_position[0] + 2, blue_pacman_position[1]]
             else:
                 target2 = [blue_pacman_position[0], blue_pacman_position[1] - 2]
-            self.target = [target2[0] * 2 - target1[0], target2[1] * 2 - target1[1]]
-        else:
+            self.target = [target1[0] * 2 - target2[0], target1[1] * 2 - target2[1]]
+        elif mode == 'scatter':
+            self.image = load_image('BlueGhost.png')
             self.target = [25, 34]
+        else:
+            self.image = load_image('ScaredGhost.png')
+            self.target = [randint(0, 27), randint(0, 35)]
         Ghosts.moving(self, blue_map)
+        return self.position
 
     def change_direction(self):
         self.direction = (self.direction + 2) % 4
@@ -225,12 +258,20 @@ class BlueGhost(pygame.sprite.Sprite, Ghosts):
             self.position[0] += 1
         elif self.direction == 2:
             self.position[0] -= 1
+        return self.position
+
+    def start_pos(self):
+        self.position = [12, 14]
+        self.rect.x = 240
+        self.rect.y = 280
+        self.moved = 0
+        self.direction = 0
 
 
 class BrownGhost(pygame.sprite.Sprite, Ghosts):
     def __init__(self, brown_positions, brown_directions):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('BrownGhost.png'), (20, 20))
+        self.image = load_image('BrownGhost.png')
         self.rect = self.image.get_rect()
         self.rect.x = brown_positions[0] * 20
         self.rect.y = brown_positions[1] * 20
@@ -243,14 +284,19 @@ class BrownGhost(pygame.sprite.Sprite, Ghosts):
 
     def update(self, brown_pacman_position, mode, brown_map):
         if mode == 'chase':
+            self.image = load_image('BrownGhost.png')
             range_from_pacman = sqrt((brown_pacman_position[0] - self.position[0]) ** 2 + (brown_pacman_position[1] -
                                                                                             self.position[1]) ** 2)
             if range_from_pacman <= 8:
                 self.target = [0, 34]
             else:
                 self.target = brown_pacman_position
-        else:
+        elif mode == 'scatter':
+            self.image = load_image('BrownGhost.png')
             self.target = [0, 34]
+        else:
+            self.image = load_image('ScaredGhost.png')
+            self.target = [randint(0, 27), randint(0, 35)]
         Ghosts.moving(self, brown_map)
         return self.position
 
@@ -265,12 +311,121 @@ class BrownGhost(pygame.sprite.Sprite, Ghosts):
             self.position[0] += 1
         elif self.direction == 2:
             self.position[0] -= 1
+        return self.position
+
+    def start_pos(self):
+        self.position = [15, 14]
+        self.rect.x = 300
+        self.rect.y = 280
+        self.moved = 0
+        self.direction = 2
+
+
+class PacMan(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image_classic = load_image('PacMan_classic.png')
+        self.image0 = load_image('PacMan0.png')
+        self.image1 = load_image('PacMan1.png')
+        self.image2 = load_image('PacMan2.png')
+        self.image3 = load_image('PacMan3.png')
+        self.marker = 0
+        self.image = self.image_classic
+        self.position = [14, 26]
+        self.rect = self.image.get_rect()
+        self.rect.x = self.position[0] * 20
+        self.rect.y = self.position[1] * 20
+        self.direction = 2
+        self.required_direction = 1
+        self.x_moved = 0
+        self.y_moved = 0
+        self.dot_is_putted = False
+        self.is_blue = False
+
+    def changing(self):
+        self.marker = 1 - self.marker
+        if self.marker == 0:
+            self.image = self.image_classic
+        else:
+            if self.direction == 0:
+                self.image = self.image0
+            elif self.direction == 1:
+                self.image = self.image1
+            elif self.direction == 2:
+                self.image = self.image2
+            elif self.direction == 3:
+                self.image = self.image3
+
+    def update(self):
+        self.dot_is_putted = False
+        self.is_blue = False
+        if can_move(self.direction, self.position, base_map):
+            if self.direction == 0:
+                self.rect.x -= 1
+                self.x_moved -= 1
+            elif self.direction == 1:
+                self.rect.y += 1
+                self.y_moved += 1
+            elif self.direction == 2:
+                self.rect.x += 1
+                self.x_moved += 1
+            elif self.direction == 3:
+                self.rect.y -= 1
+                self.y_moved -= 1
+        if self.x_moved == -20:
+            self.position[0] -= 1
+            self.x_moved = 0
+        elif self.x_moved == 20:
+            self.position[0] += 1
+            self.x_moved = 0
+        if self.y_moved == -20:
+            self.position[1] -= 1
+            self.y_moved = 0
+        elif self.y_moved == 20:
+            self.position[1] += 1
+            self.y_moved = 0
+        if self.required_direction != self.direction:
+            if self.x_moved == 0 and self.y_moved == 0 and can_move(self.required_direction, self.position, base_map):
+                self.direction = self.required_direction
+                if self.marker == 1:
+                    if self.direction == 0:
+                        self.image = self.image0
+                    elif self.direction == 1:
+                        self.image = self.image1
+                    elif self.direction == 2:
+                        self.image = self.image2
+                    elif self.direction == 3:
+                        self.image = self.image3
+        if pacman_map[self.position[1]][self.position[0]] == '*':
+            pacman_map[self.position[1]][self.position[0]] = '.'
+            self.dot_is_putted = True
+        elif pacman_map[self.position[1]][self.position[0]] == 'E':
+            pacman_map[self.position[1]][self.position[0]] = '.'
+            self.dot_is_putted = True
+            self.is_blue = True
+        n = []
+        n.append(self.position)
+        n.append(self.dot_is_putted)
+        n.append(self.is_blue)
+        return n
+
+    def change_direction(self, new_direction):
+        self.required_direction = new_direction
+
+    def start_pos(self):
+        self.position = [14, 26]
+        self.rect.x = 280
+        self.rect.y = 520
+        self.x_moved = 0
+        self.y_moved = 0
 
 
 def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
+    for i in range(len(level_map)):
+        level_map[i] = list(level_map[i])
     return level_map
 
 
@@ -350,15 +505,13 @@ brown_position = [15, 17]
 screen = pygame.display.set_mode((560, 720))
 level_number = 1
 dots = 0
+mark = 0
 base_map = load_level('level1.txt')
 pacman_map = load_level('pacman_level1.txt')
 n = start_screen()
 lives = 3
-ghosts = Ghosts
 ghost_mode = 'scatter'
-mode_timer = pygame.time.Clock()
-mode_timer.tick()
-alternating_mods = [[7, 20, 7, 20, 5, 20, 5], [7, 20, 7, 20, 5, 1033, 1], [5, 20, 5, 20, 1, 1037, 1]]
+alternating_mods = [[7, 20, 7, 20, 5, 20, 5, 9999999], [7, 20, 7, 20, 5, 1033, 1, 99999999], [5, 20, 5, 20, 1, 1037, 1, 99999999]]
 red_ghost = pygame.sprite.Group()
 red_ghost.add(RedGhost(red_position, red_direction))
 pink_ghost = pygame.sprite.Group()
@@ -367,18 +520,30 @@ blue_ghost = pygame.sprite.Group()
 blue_ghost.add(BlueGhost(blue_position, blue_direction))
 brown_ghost = pygame.sprite.Group()
 brown_ghost.add(BrownGhost(brown_position, brown_direction))
+pacman = pygame.sprite.Group()
+pacman.add(PacMan())
 clock.tick()
+blue_in_cage = True
+brown_in_cage = True
 required_dots = [244, 262, 242, 262, 250, 266, 260, 260, 232]
 mode_time_number = 0
 mode_time = 0
+is_blue_times = [10, 10, 9, 9, 8, 7, 7, 6, 6]
+is_blue_time = 0
+required_mode_time = 9999999
 colors = ['blue', (0, 255, 255), 'yellow', 'purple', 'red', (50, 50, 150), 'mediumvioletred', 'green', 'blue']
 while running and n:
+    clock.tick(60)
+    mark += 1
+    if mark == 20:
+        mark = 0
     screen.fill('black')
     generate_level(pacman_map, colors[level_number - 1])
     red_ghost.draw(screen)
     pink_ghost.draw(screen)
     blue_ghost.draw(screen)
     brown_ghost.draw(screen)
+    pacman.draw(screen)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -391,14 +556,46 @@ while running and n:
                 pacman_direction = 0
             if event.key == pygame.K_RIGHT:
                 pacman_direction = 2
+            for i in pacman:
+                i.change_direction(pacman_direction)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             print(event.pos)
-    clock.tick(60)
+    if mark == 0:
+        for i in pacman:
+            i.changing()
+    if dots >= 70 and blue_in_cage:
+        blue_in_cage = False
+        for i in blue_ghost:
+            i.start_pos()
+    if dots >= 110 and brown_in_cage:
+        brown_in_cage = False
+        for i in brown_ghost:
+            i.start_pos()
+    for i in pacman:
+        temporary_pacman = i.update()
+    pacman_position = temporary_pacman[0]
+    if temporary_pacman[1]:
+        dots += 1
+    if temporary_pacman[2]:
+        required_mode_time = mode_time
+        required_ghost_mode = ghost_mode
+        ghost_mode = 'scared'
+        mode_time -= is_blue_times[level_number - 1] * 60 - is_blue_time
+        is_blue_time = is_blue_times[level_number - 1] * 60
+    if required_mode_time == mode_time:
+        required_mode_time = 9999999
+        ghost_mode = required_ghost_mode
+    if is_blue_time > 0:
+        is_blue_time -= 1
+    print(mode_time)
     for red_ghost1 in red_ghost:
         red_position = red_ghost1.update(pacman_position, ghost_mode, base_map)
-    pink_ghost.update(pacman_position, ghost_mode, base_map, pacman_direction)
-    blue_ghost.update(pacman_position, ghost_mode, base_map, red_position, pacman_direction)
-    brown_ghost.update(pacman_position, ghost_mode, base_map)
+    for pink_ghost1 in pink_ghost:
+        pink_position = pink_ghost1.update(pacman_position, ghost_mode, base_map, pacman_direction)
+    for blue_ghost1 in blue_ghost:
+        blue_position = blue_ghost1.update(pacman_position, ghost_mode, base_map, red_position, pacman_direction)
+    for brown_ghost1 in brown_ghost:
+        brown_position = brown_ghost1.update(pacman_position, ghost_mode, base_map)
     if dots == required_dots[level_number - 1]:
         level_number += 1
         base_map = load_level('level' + str(level_number) + '.txt')
@@ -413,23 +610,36 @@ while running and n:
     else:
         mode_times = alternating_mods[2]
     mode_time += 1
-    if mode_time_number != 7:
-        if mode_time >= mode_times[mode_time_number] * 40:
-            mode_time_number += 1
-            mode_time = 0
-            if mode_time_number % 2 == 0:
-                ghost_mode = 'scatter'
-            else:
-                ghost_mode = 'chase'
-            for i in red_ghost:
-                i.change_direction()
-            for i in pink_ghost:
-                i.change_direction()
-            for i in blue_ghost:
-                i.change_direction()
-            for i in brown_ghost:
-                i.change_direction()
-    else:
-        ghost_mode = 'chase'
+    if mode_time >= mode_times[mode_time_number] * 40:
+        mode_time_number += 1
+        mode_time = 0
+        if mode_time_number % 2 == 0:
+            ghost_mode = 'scatter'
+        else:
+            ghost_mode = 'chase'
+        for i in red_ghost:
+            red_position = i.change_direction()
+        for i in pink_ghost:
+            pink_position = i.change_direction()
+        for i in blue_ghost:
+            blue_position = i.change_direction()
+        for i in brown_ghost:
+            brown_position = i.change_direction()
+    if pacman_position == blue_position or pacman_position == red_position or pacman_position == pink_position or pacman_position == brown_position:
+        lives -= 1
+        for i in pacman:
+            i.start_pos()
+        for i in red_ghost:
+            i.start_pos()
+        for i in pink_ghost:
+            i.start_pos()
+        for i in blue_ghost:
+            if not blue_in_cage:
+                i.start_pos()
+        for i in brown_ghost:
+            if not brown_in_cage:
+                i.start_pos()
+        mode_time_number = 0
+        mode_time = 0
     pygame.display.flip()
 pygame.quit()
