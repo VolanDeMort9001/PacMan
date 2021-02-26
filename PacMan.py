@@ -11,7 +11,7 @@ def load_image(name):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
     image = pygame.image.load(fullname)
-    image.set_colorkey((255, 255, 255))
+    image.set_colorkey(image.get_at((0, 0)))
     return image
 
 
@@ -210,64 +210,6 @@ class PinkGhost(pygame.sprite.Sprite, Ghosts):
         self.direction = 2
 
 
-class BlueGhost(pygame.sprite.Sprite, Ghosts):
-    def __init__(self, blue_positions, blue_directions):
-        super().__init__()
-        self.image = load_image('BlueGhost.png')
-        self.rect = self.image.get_rect()
-        self.rect.x = blue_positions[0] * 20
-        self.rect.y = blue_positions[1] * 20
-        self.direction = blue_directions
-        self.target = []
-        self.position = blue_positions
-        self.moved = 0
-        self.in_cell = True
-        self.is_blue = False
-
-    def update(self, blue_pacman_position, mode, blue_map, blue_red_position, blue_pacman_direction):
-        if mode == 'chase':
-            self.image = load_image('BlueGhost.png')
-            self.target = [0, 0]
-            target1 = blue_red_position
-            if blue_pacman_direction == 0:
-                target2 = [blue_pacman_position[0] - 2, blue_pacman_position[1]]
-            elif blue_pacman_direction == 1:
-                target2 = [blue_pacman_position[0], blue_pacman_position[1] + 2]
-            elif blue_pacman_direction == 2:
-                target2 = [blue_pacman_position[0] + 2, blue_pacman_position[1]]
-            else:
-                target2 = [blue_pacman_position[0], blue_pacman_position[1] - 2]
-            self.target = [target1[0] * 2 - target2[0], target1[1] * 2 - target2[1]]
-        elif mode == 'scatter':
-            self.image = load_image('BlueGhost.png')
-            self.target = [25, 34]
-        else:
-            self.image = load_image('ScaredGhost.png')
-            self.target = [randint(0, 27), randint(0, 35)]
-        Ghosts.moving(self, blue_map)
-        return self.position
-
-    def change_direction(self):
-        self.direction = (self.direction + 2) % 4
-        self.moved = 20 - self.moved
-        if self.direction == 3:
-            self.position[1] += 1
-        elif self.direction == 1:
-            self.position[1] -= 1
-        elif self.direction == 0:
-            self.position[0] += 1
-        elif self.direction == 2:
-            self.position[0] -= 1
-        return self.position
-
-    def start_pos(self):
-        self.position = [12, 14]
-        self.rect.x = 240
-        self.rect.y = 280
-        self.moved = 0
-        self.direction = 0
-
-
 class BrownGhost(pygame.sprite.Sprite, Ghosts):
     def __init__(self, brown_positions, brown_directions):
         super().__init__()
@@ -322,13 +264,13 @@ class BrownGhost(pygame.sprite.Sprite, Ghosts):
 
 
 class PacMan(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, color_of_pacman):
         super().__init__()
-        self.image_classic = load_image('PacMan_classic.png')
-        self.image0 = load_image('PacMan0.png')
-        self.image1 = load_image('PacMan1.png')
-        self.image2 = load_image('PacMan2.png')
-        self.image3 = load_image('PacMan3.png')
+        self.image_classic = load_image(color_of_pacman + 'PacMan_classic.png')
+        self.image0 = load_image(color_of_pacman + 'PacMan0.png')
+        self.image1 = load_image(color_of_pacman + 'PacMan1.png')
+        self.image2 = load_image(color_of_pacman + 'PacMan2.png')
+        self.image3 = load_image(color_of_pacman + 'PacMan3.png')
         self.marker = 0
         self.image = self.image_classic
         self.position = [14, 26]
@@ -336,7 +278,7 @@ class PacMan(pygame.sprite.Sprite):
         self.rect.x = self.position[0] * 20
         self.rect.y = self.position[1] * 20
         self.direction = 2
-        self.required_direction = 1
+        self.required_direction = 2
         self.x_moved = 0
         self.y_moved = 0
         self.dot_is_putted = False
@@ -412,10 +354,14 @@ class PacMan(pygame.sprite.Sprite):
     def change_direction(self, new_direction):
         self.required_direction = new_direction
 
-    def start_pos(self):
-        self.position = [14, 26]
+    def start_pos(self, level):
+        if level == 2 or level == 6:
+            self.position = [14, 25]
+            self.rect.y = 500
+        else:
+            self.position = [14, 26]
+            self.rect.y = 520
         self.rect.x = 280
-        self.rect.y = 520
         self.x_moved = 0
         self.y_moved = 0
 
@@ -429,22 +375,123 @@ def load_level(filename):
     return level_map
 
 
-def start_screen():
-    intro_text = ["PacMan",
-                  "Стрелками мыши управляйте пакманом, собирайте точки.",
-                  "Избегайте призраков, они могут съесть вас. При сборе",
-                  "больших точек вы на короткое время сможете есть призраков. Удачи!"]
+def rules_screen():
+    intro_text = ["Правила игры в Пакман крайне просты.",
+                  "Игрок стрелками управляет желтым кружочком - пакманом.",
+                  "За пакманом тем временем гоняются три призрака, которые могут",
+                  "есть пакмана.. Цель - собрать как можно болььше точек, каждая ",
+                  "приносит 10 очков. При съедании большой точке пакман на короткое ",
+                  "время обретает способность есть призраков. За первого призрака дают ",
+                  "200 очков, за каждого следующего - вдвое больше предыдущего. Всего 9 ",
+                  "уровней. При прохождении последнего Вы будете отосланы в главное меню,",
+                  "как и при смерти. Удачи в игре!"]
 
-    fon = pygame.transform.scale(load_image('Pacman_Image.png'), (580, 720))
+    fon = pygame.transform.scale(load_image('Pacman_Image.jpg'), (580, 720))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.SysFont('serif', 15)
+    text_coord = 30
+    for line in intro_text:
+        string_rendered = font.render(line, False, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 40
+        intro_rect.top = text_coord
+        intro_rect.x = 50
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    rules_running = True
+    while rules_running:
+        for rules_event in pygame.event.get():
+            if rules_event.type == pygame.KEYDOWN or rules_event.type == pygame.MOUSEBUTTONDOWN:
+                return True
+            elif rules_event.type == pygame.QUIT:
+                return False
+        pygame.display.flip()
+
+
+def settings_screen():
+    intro_text = ["Это настройки игры Пакман.",
+                  "1. Скорочть пакмана и призраков",
+                  "(Измеряется в пикселях в секунду, ",
+                  "по умолчанию 3 пикселя в секунду",
+                  '',
+                  "2       2.5       3       3.5       4       4.5       5",
+                  '',
+                  '2. Настройка цвета пакмана',
+                  '',
+                  'Красный       Синий       Желтый       Зеленый']
+    global pacman_color
+    global FPS
+    fon = pygame.transform.scale(load_image('Pacman_Image.jpg'), (580, 720))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.SysFont('serif', 25)
+    text_coord = 30
+    for line in intro_text:
+        string_rendered = font.render(line, False, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 30
+        intro_rect.top = text_coord
+        intro_rect.x = 50
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    settings_running = True
+    while settings_running:
+        for settings_event in pygame.event.get():
+            if settings_event.type == pygame.MOUSEBUTTONDOWN:
+                if settings_event.pos[1] >= 320 and settings_event.pos[1] <= 420:
+                    if settings_event.pos[0] >= 30 and settings_event.pos[0] < 80:
+                        FPS = 40
+                        return True
+                    elif settings_event.pos[0] >= 80 and settings_event.pos[0] < 160:
+                        FPS = 50
+                        return True
+                    elif settings_event.pos[0] >= 160 and settings_event.pos[0] < 210:
+                        FPS = 60
+                        return True
+                    elif settings_event.pos[0] >= 210 and settings_event.pos[0] < 290:
+                        FPS = 70
+                        return True
+                    elif settings_event.pos[0] >= 290 and settings_event.pos[0] < 340:
+                        FPS = 80
+                        return True
+                    elif settings_event.pos[0] >= 340 and settings_event.pos[0] < 420:
+                        FPS = 90
+                        return True
+                    elif settings_event.pos[0] >= 420 and settings_event.pos[0] <= 490:
+                        FPS = 100
+                        return True
+                elif settings_event.pos[1] >= 550 and settings_event.pos[1] <= 640:
+                    if settings_event.pos[0] >= 30 and settings_event.pos[0] < 160:
+                        pacman_color = 'Red_'
+                        return True
+                    elif settings_event.pos[0] >= 160 and settings_event.pos[0] < 280:
+                        pacman_color = 'Blue_'
+                        return True
+                    elif settings_event.pos[0] >= 280 and settings_event.pos[0] < 410:
+                        pacman_color = ''
+                        return True
+                    elif settings_event.pos[0] >= 410 and settings_event.pos[0] <= 530:
+                        pacman_color = 'Green_'
+                        return True
+            elif settings_event.type == pygame.QUIT:
+                return False
+        pygame.display.flip()
+
+
+def start_screen():
+    intro_text = ["Играть",
+                  "Правила",
+                  'Настройки']
+
+    fon = pygame.transform.scale(load_image('Pacman_Image.jpg'), (580, 720))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.SysFont('serif', 30)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color('white'))
+        string_rendered = font.render(line, False, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
-        text_coord += 20
+        text_coord += 50
         intro_rect.top = text_coord
-        intro_rect.x = 10
+        intro_rect.x = 220
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     start_running = True
@@ -452,16 +499,44 @@ def start_screen():
         for start_event in pygame.event.get():
             if start_event.type == pygame.QUIT:
                 pygame.quit()
-                start_running = False
                 return False
-            elif start_event.type == pygame.MOUSEBUTTONDOWN or start_event.type == pygame.KEYDOWN:
-                start_running = False
-                return True
+            elif start_event.type == pygame.MOUSEBUTTONDOWN:
+                if start_event.pos[0] >= 220 and start_event.pos[0] <= 375:
+                    if start_event.pos[1] >= 100 and start_event.pos[1] < 175:
+                        return True
+                    elif start_event.pos[1] >= 175 and start_event.pos[1] < 250:
+                        start_running = rules_screen()
+                        screen.blit(fon, (0, 0))
+                        text_coord = 50
+                        for line in intro_text:
+                            string_rendered = font.render(line, False, pygame.Color('white'))
+                            intro_rect = string_rendered.get_rect()
+                            text_coord += 50
+                            intro_rect.top = text_coord
+                            intro_rect.x = 230
+                            text_coord += intro_rect.height
+                            screen.blit(string_rendered, intro_rect)
+                        if start_screen == False:
+                            return False
+                    elif start_event.pos[1] >= 250 and start_event.pos[1] < 325:
+                        start_running = settings_screen()
+                        screen.blit(fon, (0, 0))
+                        text_coord = 50
+                        for line in intro_text:
+                            string_rendered = font.render(line, False, pygame.Color('white'))
+                            intro_rect = string_rendered.get_rect()
+                            text_coord += 50
+                            intro_rect.top = text_coord
+                            intro_rect.x = 230
+                            text_coord += intro_rect.height
+                            screen.blit(string_rendered, intro_rect)
+                        if start_screen == False:
+                            return False
         if start_running:
             pygame.display.flip()
 
 
-def generate_level(level, color):
+def generate_level(level, color, hearts):
     for y in range(len(level)):
         for x in range(len(level[y])):
             pygame.draw.rect(screen, (0, 0, 0), (x * 20, y * 20, x * 20 + 19, y * 20 + 19), 0)
@@ -486,6 +561,35 @@ def generate_level(level, color):
                     pygame.draw.line(screen, color, (x * 20, y * 20), (x * 20 + 19, y * 20))
                 if level[y + 1][x] != '#':
                     pygame.draw.line(screen, color, (x * 20, y * 20 + 19), (x * 20 + 19, y * 20 + 19))
+    font = pygame.font.SysFont('serif', 20)
+    score_string_rendered = font.render('Score:    ' + str(score), False, pygame.Color('white'))
+    score_rect = score_string_rendered.get_rect()
+    score_rect.x = 420
+    score_rect.y = 30
+    screen.blit(score_string_rendered, score_rect)
+    high_score_string_rendered = font.render('High score:    ' + str(high_score), False, pygame.Color('white'))
+    high_score_rect = high_score_string_rendered.get_rect()
+    high_score_rect.x = 20
+    high_score_rect.y = 30
+    screen.blit(high_score_string_rendered, high_score_rect)
+    if hearts >= 1:
+        heart_photo1 = load_image('Heart.jpg')
+        heart_rect1 = heart_photo1.get_rect()
+        heart_rect1.x = 380
+        heart_rect1.y = 670
+        screen.blit(heart_photo1, heart_rect1)
+    if hearts >= 2:
+        heart_photo2 = load_image('Heart.jpg')
+        heart_rect2 = heart_photo2.get_rect()
+        heart_rect2.x = 440
+        heart_rect2.y = 670
+        screen.blit(heart_photo2, heart_rect2)
+    if hearts >= 3:
+        heart_photo3 = load_image('Heart.jpg')
+        heart_rect3 = heart_photo3.get_rect()
+        heart_rect3.x = 500
+        heart_rect3.y = 670
+        screen.blit(heart_photo3, heart_rect3)
 
 
 pygame.init()
@@ -495,19 +599,19 @@ clock = pygame.time.Clock()
 pacman_direction = 2
 pink_direction = 2
 brown_direction = 0
-blue_direction = 2
+pacman_color = ''
 red_direction = 0
-pacman_position = [14, 26]
+pacman_positions = [14, 26]
 red_position = [13, 14]
 pink_position = [14, 14]
-blue_position = [11, 17]
 brown_position = [15, 17]
 screen = pygame.display.set_mode((560, 720))
 level_number = 1
 dots = 0
 mark = 0
-base_map = load_level('level1.txt')
-pacman_map = load_level('pacman_level1.txt')
+FPS = 60
+base_map = load_level('level' + str(level_number) + '.txt')
+pacman_map = load_level('pacman_level' + str(level_number) + '.txt')
 n = start_screen()
 lives = 3
 ghost_mode = 'scatter'
@@ -516,32 +620,31 @@ red_ghost = pygame.sprite.Group()
 red_ghost.add(RedGhost(red_position, red_direction))
 pink_ghost = pygame.sprite.Group()
 pink_ghost.add(PinkGhost(pink_position, pink_direction))
-blue_ghost = pygame.sprite.Group()
-blue_ghost.add(BlueGhost(blue_position, blue_direction))
 brown_ghost = pygame.sprite.Group()
 brown_ghost.add(BrownGhost(brown_position, brown_direction))
 pacman = pygame.sprite.Group()
-pacman.add(PacMan())
+pacman.add(PacMan(pacman_color))
 clock.tick()
-blue_in_cage = True
+combo = 0
+score = 0
 brown_in_cage = True
 required_dots = [244, 262, 242, 262, 250, 266, 260, 260, 232]
 mode_time_number = 0
 mode_time = 0
 is_blue_times = [10, 10, 9, 9, 8, 7, 7, 6, 6]
 is_blue_time = 0
+high_score = 0
 required_mode_time = 9999999
 colors = ['blue', (0, 255, 255), 'yellow', 'purple', 'red', (50, 50, 150), 'mediumvioletred', 'green', 'blue']
 while running and n:
-    clock.tick(60)
+    clock.tick(FPS)
     mark += 1
-    if mark == 20:
+    if mark >= FPS / 3:
         mark = 0
     screen.fill('black')
-    generate_level(pacman_map, colors[level_number - 1])
+    generate_level(pacman_map, colors[level_number - 1], lives)
     red_ghost.draw(screen)
     pink_ghost.draw(screen)
-    blue_ghost.draw(screen)
     brown_ghost.draw(screen)
     pacman.draw(screen)
     for event in pygame.event.get():
@@ -558,16 +661,10 @@ while running and n:
                 pacman_direction = 2
             for i in pacman:
                 i.change_direction(pacman_direction)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            print(event.pos)
     if mark == 0:
         for i in pacman:
             i.changing()
-    if dots >= 70 and blue_in_cage:
-        blue_in_cage = False
-        for i in blue_ghost:
-            i.start_pos()
-    if dots >= 110 and brown_in_cage:
+    if dots >= 90 and brown_in_cage:
         brown_in_cage = False
         for i in brown_ghost:
             i.start_pos()
@@ -576,6 +673,7 @@ while running and n:
     pacman_position = temporary_pacman[0]
     if temporary_pacman[1]:
         dots += 1
+        score += 10
     if temporary_pacman[2]:
         required_mode_time = mode_time
         required_ghost_mode = ghost_mode
@@ -584,25 +682,62 @@ while running and n:
         is_blue_time = is_blue_times[level_number - 1] * 60
     if required_mode_time == mode_time:
         required_mode_time = 9999999
+        combo = 0
         ghost_mode = required_ghost_mode
     if is_blue_time > 0:
         is_blue_time -= 1
-    print(mode_time)
     for red_ghost1 in red_ghost:
         red_position = red_ghost1.update(pacman_position, ghost_mode, base_map)
     for pink_ghost1 in pink_ghost:
         pink_position = pink_ghost1.update(pacman_position, ghost_mode, base_map, pacman_direction)
-    for blue_ghost1 in blue_ghost:
-        blue_position = blue_ghost1.update(pacman_position, ghost_mode, base_map, red_position, pacman_direction)
     for brown_ghost1 in brown_ghost:
         brown_position = brown_ghost1.update(pacman_position, ghost_mode, base_map)
     if dots == required_dots[level_number - 1]:
         level_number += 1
-        base_map = load_level('level' + str(level_number) + '.txt')
-        pacman_map = load_level('pacman_level' + str(level_number) + '.txt')
-        lives = 3
-        mode_time_number = 0
-        dots = 0
+        if level_number <= 9:
+            base_map = load_level('level' + str(level_number) + '.txt')
+            pacman_map = load_level('pacman_level' + str(level_number) + '.txt')
+            lives = 3
+            mode_time_number = 0
+            dots = 0
+            brown_in_cage = True
+            for i in pacman:
+                i.start_pos(level_number)
+            for i in red_ghost:
+                i.start_pos()
+            for i in pink_ghost:
+                i.start_pos()
+            for i in brown_ghost:
+                i.position = [15, 16]
+                i.rect.x = 300
+                i.rect.y = 320
+                i.moved = 0
+                i.direction = 2
+        else:
+            level_number = 1
+            red_ghost = pygame.sprite.Group()
+            red_ghost.add(RedGhost(red_position, red_direction))
+            pink_ghost = pygame.sprite.Group()
+            pink_ghost.add(PinkGhost(pink_position, pink_direction))
+            brown_ghost = pygame.sprite.Group()
+            brown_ghost.add(BrownGhost(brown_position, brown_direction))
+            pacman = pygame.sprite.Group()
+            pacman.add(PacMan())
+            mode_time = 0
+            mode_time_number = 0
+            dots = 0
+            for i in pacman:
+                i.start_pos(level_number)
+            for i in red_ghost:
+                i.start_pos()
+            for i in pink_ghost:
+                i.start_pos()
+            for i in brown_ghost:
+                if not brown_in_cage:
+                    i.start_pos()
+            lives = 3
+            score = 0
+            n = start_screen()
     if level_number == 1:
         mode_times = alternating_mods[0]
     elif level_number < 5:
@@ -621,25 +756,62 @@ while running and n:
             red_position = i.change_direction()
         for i in pink_ghost:
             pink_position = i.change_direction()
-        for i in blue_ghost:
-            blue_position = i.change_direction()
         for i in brown_ghost:
             brown_position = i.change_direction()
-    if pacman_position == blue_position or pacman_position == red_position or pacman_position == pink_position or pacman_position == brown_position:
+    if (pacman_position == red_position or pacman_position == pink_position or pacman_position == brown_position) and ghost_mode != 'scared':
         lives -= 1
         for i in pacman:
-            i.start_pos()
+            i.start_pos(level_number)
         for i in red_ghost:
             i.start_pos()
         for i in pink_ghost:
             i.start_pos()
-        for i in blue_ghost:
-            if not blue_in_cage:
-                i.start_pos()
         for i in brown_ghost:
             if not brown_in_cage:
                 i.start_pos()
         mode_time_number = 0
         mode_time = 0
+    if pacman_position == brown_position and ghost_mode == 'scared':
+        combo += 1
+        score += 100 * 2**combo
+        for i in brown_ghost:
+            i.start_pos()
+    if pacman_position == pink_position and ghost_mode == 'scared':
+        combo += 1
+        score += 100 * 2**combo
+        for i in pink_ghost:
+            i.start_pos()
+    if pacman_position == red_position and ghost_mode == 'scared':
+        combo += 1
+        score += 100 * 2**combo
+        for i in red_ghost:
+            i.start_pos()
+    if score > high_score:
+        high_score = score
+    if lives == 0:
+        level_number = 1
+        red_ghost = pygame.sprite.Group()
+        red_ghost.add(RedGhost(red_position, red_direction))
+        pink_ghost = pygame.sprite.Group()
+        pink_ghost.add(PinkGhost(pink_position, pink_direction))
+        brown_ghost = pygame.sprite.Group()
+        brown_ghost.add(BrownGhost(brown_position, brown_direction))
+        pacman = pygame.sprite.Group()
+        pacman.add(PacMan())
+        mode_time = 0
+        mode_time_number = 0
+        dots = 0
+        for i in pacman:
+            i.start_pos(level_number)
+        for i in red_ghost:
+            i.start_pos()
+        for i in pink_ghost:
+            i.start_pos()
+        for i in brown_ghost:
+            if not brown_in_cage:
+                i.start_pos()
+        lives = 3
+        score = 0
+        n = start_screen()
     pygame.display.flip()
 pygame.quit()
