@@ -94,7 +94,7 @@ class Ghosts:
                 self.rect.y += 1
             self.moved += 1
 
-            if self.moved == 20:
+            if self.moved >= 20:
                 if self.direction == 0:
                     self.position[0] -= 1
                 elif self.direction == 3:
@@ -103,7 +103,7 @@ class Ghosts:
                     self.position[0] += 1
                 elif self.direction == 1:
                     self.position[1] += 1
-                self.moved = 0
+                self.moved -= 20
                 self.in_cell = True
 
 
@@ -122,6 +122,7 @@ class RedGhost(pygame.sprite.Sprite, Ghosts):
         self.is_blue = False
 
     def update(self, red_pacman_position, mode, red_map):
+        print(self.moved)
         if mode == 'chase':
             self.image = load_image('RedGhost.png')
             self.target = red_pacman_position
@@ -364,6 +365,8 @@ class PacMan(pygame.sprite.Sprite):
         self.rect.x = 280
         self.x_moved = 0
         self.y_moved = 0
+        self.direction = 2
+        self.required_direction = 2
 
 
 def load_level(filename):
@@ -377,14 +380,14 @@ def load_level(filename):
 
 def rules_screen():
     intro_text = ["Правила игры в Пакман крайне просты.",
-                  "Игрок стрелками управляет желтым кружочком - пакманом.",
+                  "Игрок стрелками управляет кружочком - пакманом.",
                   "За пакманом тем временем гоняются три призрака, которые могут",
                   "есть пакмана.. Цель - собрать как можно болььше точек, каждая ",
                   "приносит 10 очков. При съедании большой точке пакман на короткое ",
                   "время обретает способность есть призраков. За первого призрака дают ",
                   "200 очков, за каждого следующего - вдвое больше предыдущего. Всего 9 ",
                   "уровней. При прохождении последнего Вы будете отосланы в главное меню,",
-                  "как и при смерти. Удачи в игре!"]
+                  "как и при смерти и нажатии на ESCAPE. Удачи в игре!"]
 
     fon = pygame.transform.scale(load_image('Pacman_Image.jpg'), (580, 720))
     screen.blit(fon, (0, 0))
@@ -659,6 +662,34 @@ while running and n:
                 pacman_direction = 0
             if event.key == pygame.K_RIGHT:
                 pacman_direction = 2
+            if event.key == pygame.K_ESCAPE:
+                level_number = 1
+                ghost_mode = 'scatter'
+                required_mode_time = 9999999
+                combo = 0
+                red_ghost = pygame.sprite.Group()
+                red_ghost.add(RedGhost(red_position, red_direction))
+                pink_ghost = pygame.sprite.Group()
+                pink_ghost.add(PinkGhost(pink_position, pink_direction))
+                brown_ghost = pygame.sprite.Group()
+                brown_ghost.add(BrownGhost(brown_position, brown_direction))
+                pacman = pygame.sprite.Group()
+                pacman.add(PacMan(pacman_color))
+                mode_time = 0
+                mode_time_number = 0
+                dots = 0
+                for i in pacman:
+                    i.start_pos(1)
+                for i in red_ghost:
+                    i.start_pos()
+                for i in pink_ghost:
+                    i.start_pos()
+                for i in brown_ghost:
+                    if not brown_in_cage:
+                        i.start_pos()
+                lives = 3
+                score = 0
+                n = start_screen()
             for i in pacman:
                 i.change_direction(pacman_direction)
     if mark == 0:
@@ -699,6 +730,10 @@ while running and n:
             pacman_map = load_level('pacman_level' + str(level_number) + '.txt')
             lives = 3
             mode_time_number = 0
+            mode_time = 0
+            ghost_mode = 'scatter'
+            required_mode_time = 9999999
+            combo = 0
             dots = 0
             brown_in_cage = True
             for i in pacman:
@@ -715,6 +750,9 @@ while running and n:
                 i.direction = 2
         else:
             level_number = 1
+            ghost_mode = 'scatter'
+            required_mode_time = 9999999
+            combo = 0
             red_ghost = pygame.sprite.Group()
             red_ghost.add(RedGhost(red_position, red_direction))
             pink_ghost = pygame.sprite.Group()
@@ -722,12 +760,12 @@ while running and n:
             brown_ghost = pygame.sprite.Group()
             brown_ghost.add(BrownGhost(brown_position, brown_direction))
             pacman = pygame.sprite.Group()
-            pacman.add(PacMan())
+            pacman.add(PacMan(pacman_color))
             mode_time = 0
             mode_time_number = 0
             dots = 0
             for i in pacman:
-                i.start_pos(level_number)
+                i.start_pos(1)
             for i in red_ghost:
                 i.start_pos()
             for i in pink_ghost:
@@ -760,6 +798,7 @@ while running and n:
             brown_position = i.change_direction()
     if (pacman_position == red_position or pacman_position == pink_position or pacman_position == brown_position) and ghost_mode != 'scared':
         lives -= 1
+        ghost_mode = 'scatter'
         for i in pacman:
             i.start_pos(level_number)
         for i in red_ghost:
@@ -790,6 +829,9 @@ while running and n:
         high_score = score
     if lives == 0:
         level_number = 1
+        ghost_mode = 'scatter'
+        required_mode_time = 9999999
+        combo = 0
         red_ghost = pygame.sprite.Group()
         red_ghost.add(RedGhost(red_position, red_direction))
         pink_ghost = pygame.sprite.Group()
@@ -797,12 +839,12 @@ while running and n:
         brown_ghost = pygame.sprite.Group()
         brown_ghost.add(BrownGhost(brown_position, brown_direction))
         pacman = pygame.sprite.Group()
-        pacman.add(PacMan())
+        pacman.add(PacMan(pacman_color))
         mode_time = 0
         mode_time_number = 0
         dots = 0
         for i in pacman:
-            i.start_pos(level_number)
+            i.start_pos(1)
         for i in red_ghost:
             i.start_pos()
         for i in pink_ghost:
